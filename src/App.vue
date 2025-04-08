@@ -28,13 +28,18 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(task, index) in tasks" :key="task.title">
+            <tr v-for="(task, index) in tasks" :key="task._id || index">
               <td>{{ task.title }}</td>
               <td>{{ task.description }}</td>
               <td>{{ formatDate(task.deadline) }}</td>
               <td style="text-transform: capitalize;">{{ task.priority }}</td>
               <td class="text-center">
-                <v-checkbox v-model="task.completed" :true-value="true" :false-value="false" hide-details />
+                <v-checkbox
+                  v-model="task.completed"
+                  :true-value="true"
+                  :false-value="false"
+                  hide-details
+                />
               </td>
               <td>
                 <v-btn
@@ -47,7 +52,12 @@
                   <v-icon left>mdi-pencil</v-icon>
                   Update
                 </v-btn>
-                <v-btn size="small" variant="outlined" color="error" @click="deleteTask(index)">
+                <v-btn
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  @click="deleteTask(index)"
+                >
                   <v-icon left>mdi-delete</v-icon>
                   Delete
                 </v-btn>
@@ -85,7 +95,7 @@
               required
               class="mt-3"
             ></v-text-field>
-            <!-- Deadline Field: date picker only (no manual typing) -->
+            <!-- Deadline Field -->
             <v-text-field
               label="Deadline"
               v-model="selectedTask.deadline"
@@ -93,7 +103,7 @@
               required
               class="mt-3"
             ></v-text-field>
-            <!-- Priority Field: radio group -->
+            <!-- Priority Field -->
             <v-radio-group
               v-model="selectedTask.priority"
               label="Priority"
@@ -117,142 +127,180 @@
     </v-dialog>
 
     <!-- Snackbar for Notifications -->
-    <v-snackbar v-model="snackbar.visible" location="bottom right" timeout="3000">
+    <v-snackbar
+      v-model="snackbar.visible"
+      location="bottom right"
+      timeout="3000"
+    >
       {{ snackbar.message }}
     </v-snackbar>
   </v-app>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue'
 
-// Reference to form for validation (if needed)
-const formRef = ref(null);
-
-// Array that holds all tasks
-const tasks = ref([]);
+const formRef = ref(null)
+const tasks = ref([])
 
 // Controls dialog visibility, add/edit mode, and holds data for the selected task
-const showDialog = ref(false);
-const editMode = ref(false);
+const showDialog = ref(false)
+const editMode = ref(false)
 const selectedTask = reactive({
   title: '',
   description: '',
   deadline: '',
   priority: 'low',
   completed: false
-});
-const selectedIndex = ref(null);
+})
+const selectedIndex = ref(null)
 
 // Snackbar notification state
 const snackbar = ref({
   visible: false,
   message: ''
-});
+})
 
-// Validation rules for the Title field
+// --- 1) Load tasks from server on component mount ---
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/posts')      // <-- calls your GET route
+    const data = await res.json()
+    tasks.value = data                        // store them in our tasks array
+  } catch (err) {
+    console.error('Error fetching tasks:', err)
+    showNotification('Failed to load tasks from server.')
+  }
+})
+
+// --- 2) Title validation rules ---
 const titleRules = computed(() => [
   v => !!v || 'Title is required',
   v => {
-    // In add mode, title must be unique
-    if (editMode.value) return true;
-    const titleLower = v ? v.toLowerCase() : '';
-    return tasks.value.every(task => task.title.toLowerCase() !== titleLower) || 'Title already exists';
+    // If editing, skip the uniqueness check
+    if (editMode.value) return true
+    const titleLower = v ? v.toLowerCase() : ''
+    // Check if any existing tasks share this title
+    return tasks.value.every(task => (task.title || '').toLowerCase() !== titleLower)
+      || 'Title already exists'
   }
-]);
+])
 
-// Utility: Convert a date (or date string) to "MM/DD/YYYY" for table display
 function formatDate(date) {
-  if (!date) return '';
-  const d = (date instanceof Date) ? date : new Date(date);
-  return isNaN(d) ? '' : d.toLocaleDateString('en-US');
+  if (!date) return ''
+  const d = (date instanceof Date) ? date : new Date(date)
+  return isNaN(d) ? '' : d.toLocaleDateString('en-US')
 }
 
-// Open dialog in Add mode
-function openAddDialog() {
-  editMode.value = false;
-  selectedTask.title = '';
-  selectedTask.description = '';
-  selectedTask.deadline = '';
-  selectedTask.priority = 'low';
-  selectedTask.completed = false;
-  selectedIndex.value = null;
-  // If formRef exists, reset its validation
-  if (formRef.value) {
-    formRef.value.resetValidation();
-  }
-  showDialog.value = true;
-}
-
-// Open dialog in Edit mode (title is locked)
-function openEditDialog(task, index) {
-  editMode.value = true;
-  selectedIndex.value = index;
-  // Populate dialog data with a shallow copy from the selected task.
-  selectedTask.title = task.title;
-  selectedTask.description = task.description;
-  // Convert deadline to format acceptable by type="date"
-  selectedTask.deadline = task.deadline ? formatDateForInput(task.deadline) : '';
-  selectedTask.priority = task.priority;
-  selectedTask.completed = task.completed;
-  if (formRef.value) {
-    formRef.value.resetValidation();
-  }
-  showDialog.value = true;
-}
-
-// Helper: format deadline (Date or string) to YYYY-MM-DD for type="date" input
 function formatDateForInput(date) {
-  const d = (date instanceof Date) ? date : new Date(date);
-  if (isNaN(d)) return '';
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const d = (date instanceof Date) ? date : new Date(date)
+  if (isNaN(d)) return ''
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-// Close the dialog without saving
+function openAddDialog() {
+  editMode.value = false
+  selectedTask.title = ''
+  selectedTask.description = ''
+  selectedTask.deadline = ''
+  selectedTask.priority = 'low'
+  selectedTask.completed = false
+  selectedIndex.value = null
+  if (formRef.value) formRef.value.resetValidation()
+  showDialog.value = true
+}
+
+function openEditDialog(task, index) {
+  editMode.value = true
+  selectedIndex.value = index
+  selectedTask.title = task.title
+  selectedTask.description = task.description
+  selectedTask.deadline = formatDateForInput(task.deadline)
+  selectedTask.priority = task.priority
+  selectedTask.completed = task.completed
+  if (formRef.value) formRef.value.resetValidation()
+  showDialog.value = true
+}
+
 function closeDialog() {
-  showDialog.value = false;
+  showDialog.value = false
 }
 
-// Save the task (either add new or update existing)
+// --- 3) Save or Update a task in the database ---
 async function saveTask() {
-  // Validation can be added here if necessary via formRef
-  // Convert deadline string to Date object
-  let deadlineDate = selectedTask.deadline ? new Date(selectedTask.deadline) : null;
+  // Convert the deadline string to a Date object (or null)
+  const deadlineDate = selectedTask.deadline ? new Date(selectedTask.deadline) : null
   if (deadlineDate && isNaN(deadlineDate)) {
-    // If deadline is invalid, show an error and return early.
-    showNotification('Invalid deadline date');
-    return;
+    showNotification('Invalid deadline date')
+    return
   }
+
   const taskData = {
     title: selectedTask.title,
     description: selectedTask.description,
     deadline: deadlineDate,
     priority: selectedTask.priority,
     completed: selectedTask.completed
-  };
-  if (editMode.value && selectedIndex.value !== null) {
-    tasks.value[selectedIndex.value] = taskData;
-    showNotification('Task updated successfully');
-  } else {
-    tasks.value.push(taskData);
-    showNotification('Task added successfully');
   }
-  showDialog.value = false;
+
+  // If editing, we're currently just updating the local array, but for a real server-based update,
+  // you'd create a PUT or PATCH route in your Express server. For now, let's do local only:
+  if (editMode.value && selectedIndex.value !== null) {
+    tasks.value[selectedIndex.value] = taskData
+    showNotification('Task updated (locally) successfully')
+  } else {
+    // Perform a POST request to add a new task on the server
+    try {
+      await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData)
+      })
+      showNotification('Task added successfully')
+
+      // Refresh the task list from the server
+      const res = await fetch('/api/posts')
+      tasks.value = await res.json()
+    } catch (err) {
+      console.error('Error adding task:', err)
+      showNotification('Error adding task on server.')
+    }
+  }
+
+  showDialog.value = false
 }
 
-// Delete a task from the list
-function deleteTask(index) {
-  tasks.value.splice(index, 1);
-  showNotification('Task deleted successfully');
+// --- 4) Delete a task from the database ---
+async function deleteTask(index) {
+  const taskToDelete = tasks.value[index]
+  // If the server sets an `_id`, use that in the DELETE URL
+  if (!taskToDelete._id) {
+    // No _id means we never got it from server, so just remove locally
+    tasks.value.splice(index, 1)
+    showNotification('Task deleted (local only)')
+    return
+  }
+
+  try {
+    await fetch(`/api/posts/${taskToDelete._id}`, {
+      method: 'DELETE'
+    })
+    // Remove from local array
+    tasks.value.splice(index, 1)
+    showNotification('Task deleted successfully')
+  } catch (err) {
+    console.error('Error deleting task:', err)
+    showNotification('Error deleting task on server.')
+  }
 }
 
 // Show a snackbar notification
 function showNotification(message) {
-  snackbar.value.message = message;
-  snackbar.value.visible = true;
+  snackbar.value.message = message
+  snackbar.value.visible = true
 }
 </script>
 

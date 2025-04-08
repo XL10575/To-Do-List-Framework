@@ -1,26 +1,31 @@
 {
-  "name": "my-todo-app",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "to-do-list-framework",
+  "version": "1.0.0",
+  "description": "A Vue + Node/Express Todo List App",
+  "main": "server/index.js",
   "scripts": {
-    "dev": "nodemon server/index.js",
     "build": "vite build",
+    "dev": "vite",
     "start": "node server/index.js",
     "heroku-postbuild": "npm run build"
   },
+  "engines": {
+  "node": "22.x",
+  "npm": "10.x"
+},
   "dependencies": {
     "@mdi/font": "^7.4.47",
-    "vite-plugin-vuetify": "^2.1.1",
-    "vue": "^3.5.13",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "mongodb": "^6.15.0",
+    "sass": "^1.86.3",
     "vuetify": "^3.8.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.1",
-    "vite": "^6.2.0"
-  },
-  "engines": {
-    "node": "20.x",
-    "npm": "8.x"
+    "@vitejs/plugin-vue": "^4.5.0",
+    "nodemon": "^3.1.9",
+    "vite": "^4.5.0",
+    "vue": "^3.3.4"
   }
 }
