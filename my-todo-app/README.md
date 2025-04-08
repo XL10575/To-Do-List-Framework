@@ -9,3 +9,5 @@ RUN THE PROJECT ON LOCAL
 install the dependencies and run
 npm install
 npm run dev
+
+The header title etc. exists on the top of the page but theres propertional problems that only you make page smaller you can see them.
