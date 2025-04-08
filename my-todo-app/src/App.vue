@@ -19,8 +19,8 @@
         <v-simple-table class="task-table">
           <thead>
             <tr>
-              <th style="width: 30%;">Task</th>
-              <th style="width: 30%;">Description</th>
+              <th style="width: 25%;">Task</th>
+              <th style="width: 25%;">Description</th>
               <th style="width: 15%;">Deadline</th>
               <th style="width: 15%;">Priority</th>
               <th style="width: 10%;" class="text-center">Is Complete</th>
