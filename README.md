@@ -11,3 +11,5 @@ npm install
 npm run dev
 
 The header title etc. exists on the top of the page but theres propertional problems that only you make page smaller you can see them.
+
+successfully deployed on https://my-todo-app-10575-d6aef229f9f6.herokuapp.com/
