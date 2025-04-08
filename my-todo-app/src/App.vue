@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <!-- Top App Bar -->
+    <!-- Top Bar with title and Add button -->
     <v-app-bar color="primary" dark flat>
       <v-toolbar-title>
         <v-icon class="me-2">mdi-layers</v-icon>
@@ -19,7 +19,7 @@
         <v-simple-table class="task-table">
           <thead>
             <tr>
-              <th style="width: 20%;">Task</th>
+              <th style="width: 30%;">Task</th>
               <th style="width: 30%;">Description</th>
               <th style="width: 15%;">Deadline</th>
               <th style="width: 15%;">Priority</th>
@@ -28,25 +28,15 @@
             </tr>
           </thead>
           <tbody>
-            <!-- Always show header row. If no tasks, show a message row -->
-            <tr v-if="tasks.length === 0">
-              <td colspan="6" class="text-center">No tasks added yet.</td>
-            </tr>
             <tr v-for="(task, index) in tasks" :key="task.title">
               <td>{{ task.title }}</td>
               <td>{{ task.description }}</td>
               <td>{{ formatDate(task.deadline) }}</td>
               <td style="text-transform: capitalize;">{{ task.priority }}</td>
               <td class="text-center">
-                <v-checkbox
-                  v-model="task.completed"
-                  :true-value="true"
-                  :false-value="false"
-                  hide-details
-                ></v-checkbox>
+                <v-checkbox v-model="task.completed" :true-value="true" :false-value="false" hide-details />
               </td>
               <td>
-                <!-- Update button hides if task is marked complete -->
                 <v-btn
                   v-if="!task.completed"
                   size="small"
@@ -57,23 +47,21 @@
                   <v-icon left>mdi-pencil</v-icon>
                   Update
                 </v-btn>
-                <v-btn
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  @click="deleteTask(index)"
-                >
+                <v-btn size="small" variant="outlined" color="error" @click="deleteTask(index)">
                   <v-icon left>mdi-delete</v-icon>
                   Delete
                 </v-btn>
               </td>
+            </tr>
+            <tr v-if="tasks.length === 0">
+              <td colspan="6" class="text-center">No tasks added yet.</td>
             </tr>
           </tbody>
         </v-simple-table>
       </v-container>
     </v-main>
 
-    <!-- Dialog: Add / Update Task -->
+    <!-- Dialog for Adding/Editing Task -->
     <v-dialog v-model="showDialog" max-width="600px">
       <v-card>
         <v-card-title>
@@ -81,15 +69,15 @@
         </v-card-title>
         <v-card-text>
           <v-form ref="formRef" class="pt-2">
-            <!-- Title Field (disabled in edit mode) -->
+            <!-- Title Field: required and unique; locked in edit mode -->
             <v-text-field
-              label="Task"
+              label="Title"
               v-model="selectedTask.title"
               :disabled="editMode"
               :rules="titleRules"
               required
             ></v-text-field>
-            <!-- Description Field -->
+            <!-- Description Field: required -->
             <v-text-field
               label="Description"
               v-model="selectedTask.description"
@@ -97,7 +85,7 @@
               required
               class="mt-3"
             ></v-text-field>
-            <!-- Deadline Field: date picker only -->
+            <!-- Deadline Field: date picker only (no manual typing) -->
             <v-text-field
               label="Deadline"
               v-model="selectedTask.deadline"
@@ -138,13 +126,13 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 
-// Reference for form validation (if needed)
+// Reference to form for validation (if needed)
 const formRef = ref(null);
 
 // Array that holds all tasks
 const tasks = ref([]);
 
-// Controls for dialog and current task
+// Controls dialog visibility, add/edit mode, and holds data for the selected task
 const showDialog = ref(false);
 const editMode = ref(false);
 const selectedTask = reactive({
@@ -162,35 +150,25 @@ const snackbar = ref({
   message: ''
 });
 
-// Validation rules for the Title field. In add mode, title must be unique.
+// Validation rules for the Title field
 const titleRules = computed(() => [
-  v => !!v || 'Task title is required',
+  v => !!v || 'Title is required',
   v => {
-    if (editMode.value) return true; // in edit mode the title is locked, so skip uniqueness
-    const tl = v ? v.toLowerCase() : '';
-    return tasks.value.every(task => task.title.toLowerCase() !== tl) || 'Title already exists';
+    // In add mode, title must be unique
+    if (editMode.value) return true;
+    const titleLower = v ? v.toLowerCase() : '';
+    return tasks.value.every(task => task.title.toLowerCase() !== titleLower) || 'Title already exists';
   }
 ]);
 
-// Formats a Date object (or date string) to MM/DD/YYYY for display in the table.
+// Utility: Convert a date (or date string) to "MM/DD/YYYY" for table display
 function formatDate(date) {
   if (!date) return '';
   const d = (date instanceof Date) ? date : new Date(date);
-  if (isNaN(d)) return '';
-  return d.toLocaleDateString('en-US');
+  return isNaN(d) ? '' : d.toLocaleDateString('en-US');
 }
 
-// Helper: Format a date to YYYY-MM-DD for the date input (if needed)
-function formatDateForInput(date) {
-  const d = (date instanceof Date) ? date : new Date(date);
-  if (isNaN(d)) return '';
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-// Opens the dialog in Add mode by clearing the selectedTask fields.
+// Open dialog in Add mode
 function openAddDialog() {
   editMode.value = false;
   selectedTask.title = '';
@@ -199,19 +177,21 @@ function openAddDialog() {
   selectedTask.priority = 'low';
   selectedTask.completed = false;
   selectedIndex.value = null;
+  // If formRef exists, reset its validation
   if (formRef.value) {
     formRef.value.resetValidation();
   }
   showDialog.value = true;
 }
 
-// Opens the dialog in Edit mode, populating the selectedTask fields.
+// Open dialog in Edit mode (title is locked)
 function openEditDialog(task, index) {
   editMode.value = true;
   selectedIndex.value = index;
+  // Populate dialog data with a shallow copy from the selected task.
   selectedTask.title = task.title;
   selectedTask.description = task.description;
-  // Ensure the deadline is in YYYY-MM-DD format for date input.
+  // Convert deadline to format acceptable by type="date"
   selectedTask.deadline = task.deadline ? formatDateForInput(task.deadline) : '';
   selectedTask.priority = task.priority;
   selectedTask.completed = task.completed;
@@ -221,20 +201,29 @@ function openEditDialog(task, index) {
   showDialog.value = true;
 }
 
-// Closes the dialog without saving changes.
+// Helper: format deadline (Date or string) to YYYY-MM-DD for type="date" input
+function formatDateForInput(date) {
+  const d = (date instanceof Date) ? date : new Date(date);
+  if (isNaN(d)) return '';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Close the dialog without saving
 function closeDialog() {
   showDialog.value = false;
 }
 
-// Saves the task data from the dialog. It adds a new task or updates an existing one.
+// Save the task (either add new or update existing)
 async function saveTask() {
-  if (!selectedTask.title || !selectedTask.description || !selectedTask.deadline) {
-    showNotification("Please complete all required fields.");
-    return;
-  }
-  const deadlineDate = selectedTask.deadline ? new Date(selectedTask.deadline) : null;
+  // Validation can be added here if necessary via formRef
+  // Convert deadline string to Date object
+  let deadlineDate = selectedTask.deadline ? new Date(selectedTask.deadline) : null;
   if (deadlineDate && isNaN(deadlineDate)) {
-    showNotification("Invalid deadline date.");
+    // If deadline is invalid, show an error and return early.
+    showNotification('Invalid deadline date');
     return;
   }
   const taskData = {
@@ -246,21 +235,21 @@ async function saveTask() {
   };
   if (editMode.value && selectedIndex.value !== null) {
     tasks.value[selectedIndex.value] = taskData;
-    showNotification("Task updated successfully.");
+    showNotification('Task updated successfully');
   } else {
     tasks.value.push(taskData);
-    showNotification("Task added successfully.");
+    showNotification('Task added successfully');
   }
   showDialog.value = false;
 }
 
-// Deletes the task at the specified index.
+// Delete a task from the list
 function deleteTask(index) {
   tasks.value.splice(index, 1);
-  showNotification("Task deleted successfully.");
+  showNotification('Task deleted successfully');
 }
 
-// Displays a notification message in the snackbar.
+// Show a snackbar notification
 function showNotification(message) {
   snackbar.value.message = message;
   snackbar.value.visible = true;
@@ -268,7 +257,7 @@ function showNotification(message) {
 </script>
 
 <style scoped>
-/* Table styling: evenly spaced columns and aligned content */
+/* Table styling for even spacing and aligned headers */
 .task-table {
   width: 100%;
   table-layout: fixed;
