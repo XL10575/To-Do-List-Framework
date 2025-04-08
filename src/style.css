@@ -1,31 +1,37 @@
-/* Responsive container for tables */
+/* Responsive wrapper for tables */
 .table-responsive {
   width: 100%;
   overflow-x: auto;
   margin-bottom: 1rem;
 }
 
-/* Table styling */
+/* General table styling */
 table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* Forces the browser to allocate equal widths or according to given widths */
+  table-layout: fixed;
 }
 
-/* Styling for table headers and cells */
+/* Header and cell styling */
 th, td {
   padding: 0.75rem;
   text-align: left;
   border: 1px solid #dee2e6;
-  word-wrap: break-word; /* Ensures long words/URLs break instead of overflowing */
+  word-wrap: break-word;
 }
 
-/* Setting a minimum width for header cells */
+/* Table header styling */
+thead {
+  background-color: #333;
+  color: #fff;
+}
+
+/* Minimum width to prevent collapse */
 th {
-  min-width: 100px; /* Adjust as needed */
+  min-width: 100px;
 }
 
-/* Optionally, assign specific widths to each header for consistent proportions */
+/* Specific column widths */
 th.task {
   width: 20%;
 }
@@ -40,13 +46,38 @@ th.priority {
 }
 th.complete {
   width: 10%;
+  text-align: center;
 }
 th.action {
   width: 10%;
 }
 
-/* You might also set background colors for headers for clarity */
-thead {
-  background-color: #333;
-  color: #fff;
+/* Center alignment for specific cell classes if used */
+td.complete,
+td.action {
+  text-align: center;
 }
+.main-content {
+  padding: 32px;
+  margin-top: 64px;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.task-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.task-table th,
+.task-table td {
+  padding: 12px;
+  text-align: center;
+  vertical-align: middle;
+  word-wrap: break-word;
+}
+

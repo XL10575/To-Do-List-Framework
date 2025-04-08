@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <!-- Top Bar with title and Add button -->
+    <!-- Top Bar -->
     <v-app-bar color="primary" dark flat>
       <v-toolbar-title>
         <v-icon class="me-2">mdi-layers</v-icon>
@@ -13,293 +13,301 @@
       </v-btn>
     </v-app-bar>
 
-    <!-- Main Content: Task Table -->
-    <v-main class="pa-4">
+    <!-- Main Content -->
+    <v-main class="main-content">
       <v-container>
-        <v-simple-table class="task-table">
-          <thead>
-            <tr>
-              <th style="width: 25%;">Task</th>
-              <th style="width: 25%;">Description</th>
-              <th style="width: 15%;">Deadline</th>
-              <th style="width: 15%;">Priority</th>
-              <th style="width: 10%;" class="text-center">Is Complete</th>
-              <th style="width: 10%;">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(task, index) in tasks" :key="task._id || index">
-              <td>{{ task.title }}</td>
-              <td>{{ task.description }}</td>
-              <td>{{ formatDate(task.deadline) }}</td>
-              <td style="text-transform: capitalize;">{{ task.priority }}</td>
-              <td class="text-center">
-                <v-checkbox
-                  v-model="task.completed"
-                  :true-value="true"
-                  :false-value="false"
-                  hide-details
-                />
-              </td>
-              <td>
-                <v-btn
-                  v-if="!task.completed"
-                  size="small"
-                  variant="outlined"
-                  color="primary"
-                  @click="openEditDialog(task, index)"
-                >
-                  <v-icon left>mdi-pencil</v-icon>
-                  Update
-                </v-btn>
-                <v-btn
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  @click="deleteTask(index)"
-                >
-                  <v-icon left>mdi-delete</v-icon>
-                  Delete
-                </v-btn>
-              </td>
-            </tr>
-            <tr v-if="tasks.length === 0">
-              <td colspan="6" class="text-center">No tasks added yet.</td>
-            </tr>
-          </tbody>
-        </v-simple-table>
+        <v-row class="mt-6">
+          <v-col cols="12">
+            <div class="table-responsive">
+              <v-simple-table class="task-table">
+                <thead>
+  <tr>
+    <th style="width: 16.66%;" class="text-center">Task</th>
+    <th style="width: 16.66%;" class="text-center">Description</th>
+    <th style="width: 16.66%;" class="text-center">Deadline</th>
+    <th style="width: 16.66%;" class="text-center">Priority</th>
+    <th style="width: 16.66%;" class="text-center">Is Complete</th>
+    <th style="width: 16.66%;" class="text-center">Action</th>
+  </tr>
+</thead>
+
+                <tbody>
+                  <tr v-for="(task, index) in tasks" :key="task._id || index">
+                    <td class="text-center">{{ task.title }}</td>
+                    <td class="text-center">{{ task.description }}</td>
+                    <td class="text-center">{{ formatDate(task.deadline) }}</td>
+                    <td class="text-center" style="text-transform: capitalize;">
+                      {{ task.priority }}
+                    </td>
+                    <td class="text-center">
+                      <v-checkbox
+                        v-model="task.completed"
+                        :true-value="true"
+                        :false-value="false"
+                        hide-details
+                      />
+                    </td>
+                    <td class="text-center">
+                      <v-btn
+                        v-if="!task.completed"
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                        @click="openEditDialog(task, index)"
+                      >
+                        <v-icon left>mdi-pencil</v-icon>
+                        Update
+                      </v-btn>
+                      <v-btn
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        @click="deleteTask(index)"
+                      >
+                        <v-icon left>mdi-delete</v-icon>
+                        Delete
+                      </v-btn>
+                    </td>
+                  </tr>
+                  <tr v-if="tasks.length === 0">
+                    <td colspan="6" class="text-center">No tasks added yet.</td>
+                  </tr>
+                </tbody>
+              </v-simple-table>
+            </div>
+          </v-col>
+        </v-row>
       </v-container>
     </v-main>
 
-    <!-- Dialog for Adding/Editing Task -->
     <v-dialog v-model="showDialog" max-width="600px">
-      <v-card>
-        <v-card-title>
-          {{ editMode ? 'Update Task' : 'Add Task' }}
-        </v-card-title>
-        <v-card-text>
-          <v-form ref="formRef" class="pt-2">
-            <!-- Title Field: required and unique; locked in edit mode -->
-            <v-text-field
-              label="Title"
-              v-model="selectedTask.title"
-              :disabled="editMode"
-              :rules="titleRules"
-              required
-            ></v-text-field>
-            <!-- Description Field: required -->
-            <v-text-field
-              label="Description"
-              v-model="selectedTask.description"
-              :rules="[v => !!v || 'Description is required']"
-              required
-              class="mt-3"
-            ></v-text-field>
-            <!-- Deadline Field -->
-            <v-text-field
-              label="Deadline"
-              v-model="selectedTask.deadline"
-              type="date"
-              required
-              class="mt-3"
-            ></v-text-field>
-            <!-- Priority Field -->
-            <v-radio-group
-              v-model="selectedTask.priority"
-              label="Priority"
-              row
-              class="mt-3"
-            >
-              <v-radio label="Low" value="low"></v-radio>
-              <v-radio label="Medium" value="medium"></v-radio>
-              <v-radio label="High" value="high"></v-radio>
-            </v-radio-group>
-          </v-form>
-        </v-card-text>
-        <v-card-actions>
-  <v-spacer></v-spacer>
-  <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
-  <v-btn color="primary" :loading="saving" @click="saveTask">
-    {{ editMode ? 'Update' : 'Add' }}
-  </v-btn>
-</v-card-actions>
-      </v-card>
-    </v-dialog>
+  <v-card>
+    <v-card-title>
+      {{ editMode ? 'Update Task' : 'Add Task' }}
+    </v-card-title>
+    <v-card-text>
+      <v-form ref="formRef" class="pt-2">
+        <v-text-field
+          label="Title"
+          v-model="selectedTask.title"
+          :rules="titleRules"
+          required
+        />
+        <v-text-field
+          label="Description"
+          v-model="selectedTask.description"
+          required
+          class="mt-3"
+        />
+        <v-text-field
+          label="Deadline"
+          v-model="selectedTask.deadline"
+          type="date"
+          class="mt-3"
+          required
+        />
+        <v-radio-group
+          v-model="selectedTask.priority"
+          label="Priority"
+          row
+          class="mt-3"
+        >
+          <v-radio label="Low" value="low" />
+          <v-radio label="Medium" value="medium" />
+          <v-radio label="High" value="high" />
+        </v-radio-group>
+      </v-form>
+    </v-card-text>
+    <v-card-actions>
+      <v-spacer></v-spacer>
+      <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
+      <v-btn color="primary" :loading="saving" @click="saveTask">
+        {{ editMode ? 'Update' : 'Add' }}
+      </v-btn>
+    </v-card-actions>
+  </v-card>
+</v-dialog>
 
-    <!-- Snackbar for Notifications -->
-    <v-snackbar
-      v-model="snackbar.visible"
-      location="bottom right"
-      timeout="3000"
-    >
-      {{ snackbar.message }}
-    </v-snackbar>
+<!-- Snackbar for notifications -->
+<v-snackbar
+  v-model="snackbar.visible"
+  location="bottom right"
+  timeout="3000"
+>
+  {{ snackbar.message }}
+</v-snackbar>
+
+    <!-- Dialog and Snackbar remain unchanged -->
+    <!-- ... keep your dialog and snackbar from before ... -->
   </v-app>
 </template>
 
+
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue';
 
-const formRef = ref(null)
-const tasks = ref([])
+const formRef = ref(null);
+const tasks = ref([]);
 
-// Controls dialog visibility, add/edit mode, and holds data for the selected task
-const showDialog = ref(false)
-const editMode = ref(false)
+// Dialog and editing controls
+const showDialog = ref(false);
+const editMode = ref(false);
 const selectedTask = reactive({
   title: '',
   description: '',
   deadline: '',
   priority: 'low',
   completed: false
-})
-const selectedIndex = ref(null)
+});
+const selectedIndex = ref(null);
 
-// Snackbar notification state
+// Snackbar for notifications
 const snackbar = ref({
   visible: false,
   message: ''
-})
+});
 
-// Loading flag for saving task
-const saving = ref(false)
+// Flag for saving (shows loading spinner on button)
+const saving = ref(false);
 
-// Load tasks from server on component mount
+// On mount, load tasks from the server
 onMounted(async () => {
   try {
-    const res = await fetch('/api/posts') // calls your GET route
-    tasks.value = await res.json()         // store them in our tasks array
-  } catch (err) {
-    console.error('Error fetching tasks:', err)
-    showNotification('Failed to load tasks from server.')
+    const res = await fetch('/api/posts');
+    tasks.value = await res.json();
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    showNotification('Failed to load tasks from server.');
   }
-})
+});
 
-// Title validation rules
+// Title validation rule
 const titleRules = computed(() => [
   v => !!v || 'Title is required',
   v => {
-    if (editMode.value) return true
-    const titleLower = v ? v.toLowerCase() : ''
+    if (editMode.value) return true;
+    const titleLower = v ? v.toLowerCase() : '';
     return tasks.value.every(task => (task.title || '').toLowerCase() !== titleLower)
-      || 'Title already exists'
+      || 'Title already exists';
   }
-])
+]);
 
-// Utility: formats date to a readable format
+// Format a date to a readable format for display
 function formatDate(date) {
-  if (!date) return ''
-  const d = date instanceof Date ? date : new Date(date)
-  return isNaN(d) ? '' : d.toLocaleDateString('en-US')
+  if (!date) return '';
+  const d = new Date(date);
+  return isNaN(d) ? '' : d.toLocaleDateString('en-US');
 }
 
-// Helper: formats date for input (YYYY-MM-DD)
+// Format a date for the date input (YYYY-MM-DD)
 function formatDateForInput(date) {
-  const d = date instanceof Date ? date : new Date(date)
-  if (isNaN(d)) return ''
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const d = new Date(date);
+  if (isNaN(d)) return '';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
+// Open the dialog for adding a new task
 function openAddDialog() {
-  editMode.value = false
-  selectedTask.title = ''
-  selectedTask.description = ''
-  selectedTask.deadline = ''
-  selectedTask.priority = 'low'
-  selectedTask.completed = false
-  selectedIndex.value = null
-  if (formRef.value) formRef.value.resetValidation()
-  showDialog.value = true
+  editMode.value = false;
+  selectedTask.title = '';
+  selectedTask.description = '';
+  selectedTask.deadline = '';
+  selectedTask.priority = 'low';
+  selectedTask.completed = false;
+  selectedIndex.value = null;
+  if (formRef.value) formRef.value.resetValidation();
+  showDialog.value = true;
 }
 
+// Open the dialog for editing an existing task
 function openEditDialog(task, index) {
-  editMode.value = true
-  selectedIndex.value = index
-  selectedTask.title = task.title
-  selectedTask.description = task.description
-  selectedTask.deadline = formatDateForInput(task.deadline)
-  selectedTask.priority = task.priority
-  selectedTask.completed = task.completed
-  if (formRef.value) formRef.value.resetValidation()
-  showDialog.value = true
+  editMode.value = true;
+  selectedIndex.value = index;
+  selectedTask.title = task.title;
+  selectedTask.description = task.description;
+  selectedTask.deadline = formatDateForInput(task.deadline);
+  selectedTask.priority = task.priority;
+  selectedTask.completed = task.completed;
+  if (formRef.value) formRef.value.resetValidation();
+  showDialog.value = true;
 }
 
+// Close the dialog
 function closeDialog() {
-  showDialog.value = false
+  showDialog.value = false;
 }
 
+// Save a new task or update an existing task
 async function saveTask() {
-  if (!selectedTask.title || !selectedTask.description) {
-    showNotification('Please fill out all required fields.')
-    return
+  if (!selectedTask.title || !selectedTask.description || !selectedTask.deadline) {
+    showNotification('Please fill out all required fields.');
+    return;
   }
-  
-  saving.value = true
-  
-  const deadlineDate = selectedTask.deadline ? new Date(selectedTask.deadline) : null
-  if (selectedTask.deadline && isNaN(deadlineDate)) {
-    showNotification('Invalid deadline date')
-    saving.value = false
-    return
-  }
-  
+
+  saving.value = true;
+
   const taskData = {
     title: selectedTask.title,
     description: selectedTask.description,
-    deadline: deadlineDate,
+    deadline: selectedTask.deadline,
     priority: selectedTask.priority,
     completed: selectedTask.completed
-  }
-  
-  console.log("Saving task data:", taskData)
-  
+  };
+
   try {
-    const postRes = await fetch('/api/posts', {
+    // Optional: Post to server
+    const res = await fetch('/api/posts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(taskData)
-    })
-    if (!postRes.ok) {
-      throw new Error(`Server responded with ${postRes.status}`)
+    });
+
+    if (res.ok) {
+      const newTask = await res.json();
+      tasks.value.push(newTask);
+    } else {
+      // Fallback to local push if API fails
+      tasks.value.push({ ...taskData });
     }
-    showNotification('Task added successfully')
-    
-    // Refresh the task list from the server
-    const res = await fetch('/api/posts')
-    tasks.value = await res.json()
+
+    showNotification(editMode.value ? 'Task updated.' : 'Task added.');
   } catch (err) {
-    console.error('Error adding task:', err)
-    showNotification('Error adding task on server.')
+    console.error('Error saving task:', err);
+    // Fallback: local add if offline
+    tasks.value.push({ ...taskData });
+    showNotification('Saved locally.');
   } finally {
-    saving.value = false
-    showDialog.value = false
+    showDialog.value = false;
+    saving.value = false;
   }
 }
 
+
+// Delete a task from the server
 async function deleteTask(index) {
-  const taskToDelete = tasks.value[index]
+  const taskToDelete = tasks.value[index];
   if (!taskToDelete._id) {
-    tasks.value.splice(index, 1)
-    showNotification('Task deleted (local only)')
-    return
+    tasks.value.splice(index, 1);
+    showNotification('Task deleted locally');
+    return;
   }
   try {
-    await fetch(`/api/posts/${taskToDelete._id}`, { method: 'DELETE' })
-    tasks.value.splice(index, 1)
-    showNotification('Task deleted successfully')
-  } catch (err) {
-    console.error('Error deleting task:', err)
-    showNotification('Error deleting task on server.')
+    await fetch(`/api/posts/${taskToDelete._id}`, { method: 'DELETE' });
+    tasks.value.splice(index, 1);
+    showNotification('Task deleted successfully');
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    showNotification('Error deleting task on server.');
   }
 }
 
-// *** Only a single declaration of showNotification should exist ***
+// Display a snackbar notification
 function showNotification(message) {
-  snackbar.value.message = message
-  snackbar.value.visible = true
+  snackbar.value.message = message;
+  snackbar.value.visible = true;
 }
 </script>
 
