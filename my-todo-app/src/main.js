@@ -1,5 +1,22 @@
+// src/main.js
 import { createApp } from 'vue'
-import './style.css'
 import App from './App.vue'
 
-createApp(App).mount('#app')
+// 1. Import Vuetify styles
+import 'vuetify/styles'
+import '@mdi/font/css/materialdesignicons.css' // For MDI Icons
+
+// 2. Create Vuetify instance
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+
+const vuetify = createVuetify({
+  components,
+  directives,
+})
+
+// 3. Mount Vue + Vuetify
+createApp(App)
+  .use(vuetify)
+  .mount('#app')
