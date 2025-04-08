@@ -117,12 +117,12 @@
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
-          <v-btn color="primary" :loading="saving" @click="saveTask">
-             {{ editMode ? 'Update' : 'Add' }}
-        </v-btn>
-        </v-card-actions>
+  <v-spacer></v-spacer>
+  <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
+  <v-btn color="primary" :loading="saving" @click="saveTask">
+    {{ editMode ? 'Update' : 'Add' }}
+  </v-btn>
+</v-card-actions>
       </v-card>
     </v-dialog>
 
@@ -143,7 +143,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 const formRef = ref(null)
 const tasks = ref([])
 
-// Controls dialog visibility, add/edit mode, etc.
+// Controls dialog visibility, add/edit mode, and holds data for the selected task
 const showDialog = ref(false)
 const editMode = ref(false)
 const selectedTask = reactive({
@@ -161,19 +161,21 @@ const snackbar = ref({
   message: ''
 })
 
-// New reactive flag to indicate saving state
+// Loading flag for saving task
 const saving = ref(false)
 
+// Load tasks from server on component mount
 onMounted(async () => {
   try {
-    const res = await fetch('/api/posts')  // GET /api/posts
-    tasks.value = await res.json()
+    const res = await fetch('/api/posts') // calls your GET route
+    tasks.value = await res.json()         // store them in our tasks array
   } catch (err) {
     console.error('Error fetching tasks:', err)
     showNotification('Failed to load tasks from server.')
   }
 })
 
+// Title validation rules
 const titleRules = computed(() => [
   v => !!v || 'Title is required',
   v => {
@@ -184,12 +186,14 @@ const titleRules = computed(() => [
   }
 ])
 
+// Utility: formats date to a readable format
 function formatDate(date) {
   if (!date) return ''
   const d = date instanceof Date ? date : new Date(date)
   return isNaN(d) ? '' : d.toLocaleDateString('en-US')
 }
 
+// Helper: formats date for input (YYYY-MM-DD)
 function formatDateForInput(date) {
   const d = date instanceof Date ? date : new Date(date)
   if (isNaN(d)) return ''
@@ -228,7 +232,6 @@ function closeDialog() {
 }
 
 async function saveTask() {
-  // Simple validation check
   if (!selectedTask.title || !selectedTask.description) {
     showNotification('Please fill out all required fields.')
     return
@@ -236,7 +239,6 @@ async function saveTask() {
   
   saving.value = true
   
-  // Convert deadline string to Date if provided
   const deadlineDate = selectedTask.deadline ? new Date(selectedTask.deadline) : null
   if (selectedTask.deadline && isNaN(deadlineDate)) {
     showNotification('Invalid deadline date')
@@ -244,7 +246,6 @@ async function saveTask() {
     return
   }
   
-  // Prepare data to send
   const taskData = {
     title: selectedTask.title,
     description: selectedTask.description,
@@ -253,7 +254,6 @@ async function saveTask() {
     completed: selectedTask.completed
   }
   
-  // Debug log (you can remove this later)
   console.log("Saving task data:", taskData)
   
   try {
@@ -267,7 +267,7 @@ async function saveTask() {
     }
     showNotification('Task added successfully')
     
-    // Refresh tasks list from server
+    // Refresh the task list from the server
     const res = await fetch('/api/posts')
     tasks.value = await res.json()
   } catch (err) {
@@ -296,19 +296,13 @@ async function deleteTask(index) {
   }
 }
 
-function showNotification(message) {
-  snackbar.value.message = message
-  snackbar.value.visible = true
-}
-
-
-
-// Show a snackbar notification
+// *** Only a single declaration of showNotification should exist ***
 function showNotification(message) {
   snackbar.value.message = message
   snackbar.value.visible = true
 }
 </script>
+
 
 <style scoped>
 /* Table styling for even spacing and aligned headers */
