@@ -119,9 +119,9 @@
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
-          <v-btn color="primary" @click="saveTask">
-            {{ editMode ? 'Update' : 'Add' }}
-          </v-btn>
+          <v-btn color="primary" :loading="saving" @click="saveTask">
+             {{ editMode ? 'Update' : 'Add' }}
+        </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -143,7 +143,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 const formRef = ref(null)
 const tasks = ref([])
 
-// Controls dialog visibility, add/edit mode, and holds data for the selected task
+// Controls dialog visibility, add/edit mode, etc.
 const showDialog = ref(false)
 const editMode = ref(false)
 const selectedTask = reactive({
@@ -161,26 +161,24 @@ const snackbar = ref({
   message: ''
 })
 
-// --- 1) Load tasks from server on component mount ---
+// New reactive flag to indicate saving state
+const saving = ref(false)
+
 onMounted(async () => {
   try {
-    const res = await fetch('/api/posts')      // <-- calls your GET route
-    const data = await res.json()
-    tasks.value = data                        // store them in our tasks array
+    const res = await fetch('/api/posts')  // GET /api/posts
+    tasks.value = await res.json()
   } catch (err) {
     console.error('Error fetching tasks:', err)
     showNotification('Failed to load tasks from server.')
   }
 })
 
-// --- 2) Title validation rules ---
 const titleRules = computed(() => [
   v => !!v || 'Title is required',
   v => {
-    // If editing, skip the uniqueness check
     if (editMode.value) return true
     const titleLower = v ? v.toLowerCase() : ''
-    // Check if any existing tasks share this title
     return tasks.value.every(task => (task.title || '').toLowerCase() !== titleLower)
       || 'Title already exists'
   }
@@ -188,12 +186,12 @@ const titleRules = computed(() => [
 
 function formatDate(date) {
   if (!date) return ''
-  const d = (date instanceof Date) ? date : new Date(date)
+  const d = date instanceof Date ? date : new Date(date)
   return isNaN(d) ? '' : d.toLocaleDateString('en-US')
 }
 
 function formatDateForInput(date) {
-  const d = (date instanceof Date) ? date : new Date(date)
+  const d = date instanceof Date ? date : new Date(date)
   if (isNaN(d)) return ''
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
@@ -229,15 +227,24 @@ function closeDialog() {
   showDialog.value = false
 }
 
-// --- 3) Save or Update a task in the database ---
 async function saveTask() {
-  // Convert the deadline string to a Date object (or null)
-  const deadlineDate = selectedTask.deadline ? new Date(selectedTask.deadline) : null
-  if (deadlineDate && isNaN(deadlineDate)) {
-    showNotification('Invalid deadline date')
+  // Simple validation check
+  if (!selectedTask.title || !selectedTask.description) {
+    showNotification('Please fill out all required fields.')
     return
   }
-
+  
+  saving.value = true
+  
+  // Convert deadline string to Date if provided
+  const deadlineDate = selectedTask.deadline ? new Date(selectedTask.deadline) : null
+  if (selectedTask.deadline && isNaN(deadlineDate)) {
+    showNotification('Invalid deadline date')
+    saving.value = false
+    return
+  }
+  
+  // Prepare data to send
   const taskData = {
     title: selectedTask.title,
     description: selectedTask.description,
@@ -245,50 +252,42 @@ async function saveTask() {
     priority: selectedTask.priority,
     completed: selectedTask.completed
   }
-
-  // If editing, we're currently just updating the local array, but for a real server-based update,
-  // you'd create a PUT or PATCH route in your Express server. For now, let's do local only:
-  if (editMode.value && selectedIndex.value !== null) {
-    tasks.value[selectedIndex.value] = taskData
-    showNotification('Task updated (locally) successfully')
-  } else {
-    // Perform a POST request to add a new task on the server
-    try {
-      await fetch('/api/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskData)
-      })
-      showNotification('Task added successfully')
-
-      // Refresh the task list from the server
-      const res = await fetch('/api/posts')
-      tasks.value = await res.json()
-    } catch (err) {
-      console.error('Error adding task:', err)
-      showNotification('Error adding task on server.')
+  
+  // Debug log (you can remove this later)
+  console.log("Saving task data:", taskData)
+  
+  try {
+    const postRes = await fetch('/api/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(taskData)
+    })
+    if (!postRes.ok) {
+      throw new Error(`Server responded with ${postRes.status}`)
     }
+    showNotification('Task added successfully')
+    
+    // Refresh tasks list from server
+    const res = await fetch('/api/posts')
+    tasks.value = await res.json()
+  } catch (err) {
+    console.error('Error adding task:', err)
+    showNotification('Error adding task on server.')
+  } finally {
+    saving.value = false
+    showDialog.value = false
   }
-
-  showDialog.value = false
 }
 
-// --- 4) Delete a task from the database ---
 async function deleteTask(index) {
   const taskToDelete = tasks.value[index]
-  // If the server sets an `_id`, use that in the DELETE URL
   if (!taskToDelete._id) {
-    // No _id means we never got it from server, so just remove locally
     tasks.value.splice(index, 1)
     showNotification('Task deleted (local only)')
     return
   }
-
   try {
-    await fetch(`/api/posts/${taskToDelete._id}`, {
-      method: 'DELETE'
-    })
-    // Remove from local array
+    await fetch(`/api/posts/${taskToDelete._id}`, { method: 'DELETE' })
     tasks.value.splice(index, 1)
     showNotification('Task deleted successfully')
   } catch (err) {
@@ -296,6 +295,13 @@ async function deleteTask(index) {
     showNotification('Error deleting task on server.')
   }
 }
+
+function showNotification(message) {
+  snackbar.value.message = message
+  snackbar.value.visible = true
+}
+
+
 
 // Show a snackbar notification
 function showNotification(message) {
