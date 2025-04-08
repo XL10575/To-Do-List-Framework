@@ -1,34 +1,26 @@
 {
-  "name": "to-do-list-framework",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "my-todo-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "dev": "nodemon server/index.js",
     "build": "vite build",
-    "start": "npm run build && node server/index.js"
+    "start": "node server/index.js",
+    "heroku-postbuild": "npm run build"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/XL10575/To-Do-List-Framework.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/XL10575/To-Do-List-Framework/issues"
-  },
-  "homepage": "https://github.com/XL10575/To-Do-List-Framework#readme",
-  "description": "",
   "dependencies": {
-    "body-parser": "^2.2.0",
-    "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "mongodb": "^6.15.0",
-    "vue": "^3.5.13"
+    "@mdi/font": "^7.4.47",
+    "vite-plugin-vuetify": "^2.1.1",
+    "vue": "^3.5.13",
+    "vuetify": "^3.8.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.3",
-    "nodemon": "^3.1.9",
-    "vite": "^6.2.5"
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.2.0"
+  },
+  "engines": {
+    "node": "20.x",
+    "npm": "8.x"
   }
 }

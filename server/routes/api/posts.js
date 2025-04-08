@@ -30,6 +30,7 @@ router.delete('/:id', async (req, res) => {
   await posts.deleteOne({ _id: new mongodb.ObjectId(req.params.id) });
   res.status(200).send();
 })
+
 async function loadPostsCollection() {
   const client = await mongodb.MongoClient.connect
   ('mongodb+srv://XL10575:Eco7JFtCi3Ghb8bb@cluster0.cexujgy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',);
