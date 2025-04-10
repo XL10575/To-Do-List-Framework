@@ -1,23 +1,21 @@
 require('dotenv').config();
-// server/index.js
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-// any other imports…
 
 const app = express();
 
 app.use(cors());
-app.use(express.json()); // or body-parser
+app.use(express.json());
 
-// Serve static files from the 'dist' directory:
+// Serve static files from the 'dist' directory
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// Your API routes:
+// Mount the posts routes at "/api/posts"
 const posts = require('./routes/api/posts');
 app.use('/api/posts', posts);
 
-// Handle SPA (Vue) - redirect all unknown routes to index.html
+// For any other routes, serve the Vue app (for SPA routing)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });

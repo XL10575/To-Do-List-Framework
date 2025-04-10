@@ -2,9 +2,9 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 
-// 1. Import Vuetify styles
+// 1. Import Vuetify styles and MDI icons
 import 'vuetify/styles'
-import '@mdi/font/css/materialdesignicons.css' // For MDI Icons
+import '@mdi/font/css/materialdesignicons.css'
 
 // 2. Create Vuetify instance
 import { createVuetify } from 'vuetify'
@@ -13,7 +13,7 @@ import * as directives from 'vuetify/directives'
 
 const vuetify = createVuetify({
   components,
-  directives,
+  directives
 })
 
 // 3. Mount Vue + Vuetify
